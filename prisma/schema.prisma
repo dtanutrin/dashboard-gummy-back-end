@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Area {
+  id           Int          @id @default(autoincrement())
+  name         String       @unique
+  dashboards   Dashboard[]
+  userAccesses UserAreaAccess[]
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@map("Areas")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  role          String         @default("User") // 'Admin' or 'User'
+  areaAccesses  UserAreaAccess[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@map("Users")
+}
+
+model Dashboard {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+  areaId    Int      @map("area_id")
+  area      Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([areaId])
+  @@map("Dashboards")
+}
+
+model UserAreaAccess {
+  userId  Int  @map("user_id")
+  areaId  Int  @map("area_id")
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  area    Area @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@id([userId, areaId])
+  @@index([userId])
+  @@index([areaId])
+  @@map("UserAreaAccess")
+}
+
