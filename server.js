@@ -29,9 +29,9 @@ app.use(limiter);
 // Middlewares Gerais
 app.use(express.json()); // Habilita o parsing de JSON
 
-// Rotas
-app.use('/api/auth.js', authRoutes);
-app.use('/api/dashboards.js', dashboardRoutes);
+// Rotas (CORRIGIDO - removido o .js dos caminhos)
+app.use('/api/auth', authRoutes);
+app.use('/api/dashboards', dashboardRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {
@@ -48,4 +48,3 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
   console.log(`Servidor backend rodando na porta ${port}`);
 });
-
