@@ -6,7 +6,9 @@ import rateLimit from 'express-rate-limit'; // Importa express-rate-limit
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboards.js';
 
+
 dotenv.config();
+
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -14,6 +16,7 @@ const port = process.env.PORT || 5000;
 // Middlewares de Segurança Essenciais
 app.use(helmet()); // Adiciona cabeçalhos de segurança
 app.use(cors()); // Habilita CORS (ajuste as opções se necessário para produção)
+app.set("trust proxy", 1); // Confia no primeiro proxy (adequado para o Render)
 
 // Middleware de Limitação de Taxa (Rate Limiting) - Geral
 // Aplica a todas as requisições. Pode ser configurado por rota se necessário.
