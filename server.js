@@ -18,6 +18,7 @@ app.use(helmet()); // Adiciona cabeçalhos de segurança
 app.use(cors()); // Habilita CORS (ajuste as opções se necessário para produção)
 app.set("trust proxy", 1); // Confia no primeiro proxy (adequado para o Render)
 
+
 // Middleware de Limitação de Taxa (Rate Limiting) - Geral
 // Aplica a todas as requisições. Pode ser configurado por rota se necessário.
 const limiter = rateLimit({
