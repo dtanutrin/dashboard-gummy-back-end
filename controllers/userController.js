@@ -1,4 +1,4 @@
-import prisma from "../prisma/client.js";
+import prisma from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 
 // Helper function to exclude password hash from user object
