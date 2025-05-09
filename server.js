@@ -5,6 +5,7 @@ import helmet from 'helmet'; // Importa helmet
 import rateLimit from 'express-rate-limit'; // Importa express-rate-limit
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboards.js';
+import userRoutes from './routes/users.js';
 
 
 dotenv.config();
@@ -52,3 +53,4 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
   console.log(`Servidor backend rodando na porta ${port}`);
 });
+app.use('/api/users', userRoutes);
