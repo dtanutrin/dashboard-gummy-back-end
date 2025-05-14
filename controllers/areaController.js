@@ -150,7 +150,6 @@ export const deleteArea = async (req, res) => {
         error: "Não é possível excluir a área pois existem dashboards associados a ela. Remova os dashboards primeiro."
       });
     }
-
     const userAccessCount = await prisma.userAreaAccess.count({
         where: { areaId: parseInt(id) },
     });
