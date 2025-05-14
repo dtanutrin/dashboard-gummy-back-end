@@ -1,16 +1,15 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const areaController = require("../controllers/areaController");
-const authenticateToken = require("../middleware/authenticateToken");
-const isAdmin = require("../middleware/isAdmin");
+import { createArea, getAllAreas, getAreaById, updateArea, deleteArea } from "../controllers/areaController.js";
+import { authenticateToken } from "../middleware/authenticateToken.js";
+import { isAdmin } from "../middleware/isAdmin.js";
 
 // Rotas para Áreas (protegidas e apenas para admin)
-router.post("/", authenticateToken, isAdmin, areaController.createArea);
-router.get("/", authenticateToken, isAdmin, areaController.getAllAreas); // Admin pode ver todas as áreas para gerenciamento
-// Para usuários comuns, a lista de áreas acessíveis virá de outra lógica, possivelmente via /api/auth/me ou similar
-router.get("/:id", authenticateToken, isAdmin, areaController.getAreaById);
-router.put("/:id", authenticateToken, isAdmin, areaController.updateArea);
-router.delete("/:id", authenticateToken, isAdmin, areaController.deleteArea);
+router.post("/", authenticateToken, isAdmin, createArea);
+router.get("/", authenticateToken, isAdmin, getAllAreas); // Admin pode ver todas as áreas para gerenciamento
+router.get("/:id", authenticateToken, isAdmin, getAreaById);
+router.put("/:id", authenticateToken, isAdmin, updateArea);
+router.delete("/:id", authenticateToken, isAdmin, deleteArea);
 
-module.exports = router;
+export default router;
 

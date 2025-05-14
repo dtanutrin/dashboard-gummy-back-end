@@ -1,8 +1,8 @@
-const { PrismaClient } = require("@prisma/client");
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Criar uma nova Área
-exports.createArea = async (req, res) => {
+export const createArea = async (req, res) => {
   const { name } = req.body;
   if (!name) {
     return res.status(400).json({ error: "O nome da área é obrigatório." });
@@ -25,7 +25,7 @@ exports.createArea = async (req, res) => {
 };
 
 // Obter todas as Áreas com seus Dashboards
-exports.getAllAreas = async (req, res) => {
+export const getAllAreas = async (req, res) => {
   try {
     const areas = await prisma.area.findMany({
       orderBy: {
@@ -43,7 +43,7 @@ exports.getAllAreas = async (req, res) => {
 };
 
 // Obter uma Área por ID com seus Dashboards
-exports.getAreaById = async (req, res) => {
+export const getAreaById = async (req, res) => {
   const { id } = req.params;
   try {
     const area = await prisma.area.findUnique({
@@ -63,7 +63,7 @@ exports.getAreaById = async (req, res) => {
 };
 
 // Atualizar uma Área
-exports.updateArea = async (req, res) => {
+export const updateArea = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   if (!name) {
@@ -97,7 +97,7 @@ exports.updateArea = async (req, res) => {
 };
 
 // Deletar uma Área
-exports.deleteArea = async (req, res) => {
+export const deleteArea = async (req, res) => {
   const { id } = req.params;
   try {
     const dashboardsCount = await prisma.dashboard.count({
