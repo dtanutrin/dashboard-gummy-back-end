@@ -19,9 +19,9 @@ export const loginUser = async (req, res, next) => {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        userAreaAccesses: { // Inclui os acessos às áreas
+        areaAccesses: { // Corrigido para areaAccesses
           include: {
-            area: true, // Inclui os dados da área em cada acesso
+            area: true, 
           },
         },
       },
@@ -31,16 +31,13 @@ export const loginUser = async (req, res, next) => {
       return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
-    // Mapeia os acessos para um formato mais simples de áreas
-    const areas = user.userAreaAccesses.map(access => access.area);
+    const areas = user.areaAccesses.map(access => access.area);
 
     const token = jwt.sign(
       {
         userId: user.id,
         email: user.email,
         role: user.role,
-        // Não incluímos 'areas' diretamente no token JWT para mantê-lo menor,
-        // mas o retornaremos na resposta do login e na rota /me.
       },
       JWT_SECRET,
       { expiresIn: "1h" }
@@ -53,7 +50,8 @@ export const loginUser = async (req, res, next) => {
         id: user.id,
         email: user.email,
         role: user.role,
-        areas: areas, // Retorna as áreas do usuário
+        name: user.name, // Adicionando o nome do usuário se existir no seu schema
+        areas: areas, 
       },
     });
 
@@ -62,6 +60,4 @@ export const loginUser = async (req, res, next) => {
     next(error);
   }
 };
-
-// A rota /me será ajustada em routes/auth.js para buscar e retornar as áreas também.
 

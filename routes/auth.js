@@ -31,7 +31,7 @@ router.get("/me", authenticateToken, async (req, res, next) => {
         email: true,
         role: true,
         name: true, // Incluir o nome do usuário se existir
-        userAreaAccesses: {
+        areaAccesses: { // Corrigido para areaAccesses
           select: {
             area: {
               select: {
@@ -49,7 +49,7 @@ router.get("/me", authenticateToken, async (req, res, next) => {
     }
 
     // Formatar as áreas para o frontend
-    const areas = userWithAreas.userAreaAccesses.map(access => access.area);
+    const areas = userWithAreas.areaAccesses.map(access => access.area);
 
     res.status(200).json({
       id: userWithAreas.id,
