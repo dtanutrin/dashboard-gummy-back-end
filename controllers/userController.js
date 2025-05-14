@@ -1,9 +1,9 @@
-const { PrismaClient } = require("@prisma/client");
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
-const bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
 
 // Criar um novo Usuário
-exports.createUser = async (req, res) => {
+export const createUser = async (req, res) => {
   const { email, password, role, areaIds } = req.body; // areaIds é um array de IDs de Area
 
   if (!email || !password) {
@@ -54,7 +54,7 @@ exports.createUser = async (req, res) => {
 };
 
 // Obter todos os Usuários
-exports.getAllUsers = async (req, res) => {
+export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       orderBy: {
@@ -84,7 +84,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 // Obter um Usuário por ID
-exports.getUserById = async (req, res) => {
+export const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
     const user = await prisma.user.findUnique({
@@ -112,7 +112,7 @@ exports.getUserById = async (req, res) => {
 };
 
 // Atualizar um Usuário
-exports.updateUser = async (req, res) => {
+export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { email, password, role, areaIds } = req.body;
 
@@ -122,7 +122,6 @@ exports.updateUser = async (req, res) => {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-    // Obter acessos de área atuais para o usuário
     const currentUserAreaAccesses = await prisma.userAreaAccess.findMany({
         where: { userId: parseInt(id) }
     });
@@ -135,7 +134,7 @@ exports.updateUser = async (req, res) => {
       where: { id: parseInt(id) },
       data: {
         email: email,
-        passwordHash: hashedPassword, // undefined se a senha não for alterada
+        passwordHash: hashedPassword, 
         role: role,
         areaAccesses: {
           create: areaIdsToCreate.map((areaId) => ({ areaId: parseInt(areaId) })),
@@ -158,13 +157,13 @@ exports.updateUser = async (req, res) => {
     });
 
   } catch (error) {
-    if (error.code === "P2025") { // Registro não encontrado
+    if (error.code === "P2025") { 
       return res.status(404).json({ error: "Usuário não encontrado para atualização." });
     }
-    if (error.code === 'P2002' && error.meta?.target?.includes('email')) { // Violação de unicidade no email
+    if (error.code === 'P2002' && error.meta?.target?.includes('email')) { 
         return res.status(400).json({ error: "Este email já está em uso por outro usuário." });
     }
-    if (error.code === 'P2003') { // Foreign key constraint failed
+    if (error.code === 'P2003') { 
         return res.status(400).json({ error: "Uma ou mais IDs de área fornecidas são inválidas." });
     }
     console.error("Erro ao atualizar usuário:", error);
@@ -173,10 +172,9 @@ exports.updateUser = async (req, res) => {
 };
 
 // Deletar um Usuário
-exports.deleteUser = async (req, res) => {
+export const deleteUser = async (req, res) => {
   const { id } = req.params;
   try {
-    // O Prisma cuidará da exclusão em cascata de UserAreaAccess devido ao onDelete: Cascade no schema
     await prisma.user.delete({
       where: { id: parseInt(id) },
     });
