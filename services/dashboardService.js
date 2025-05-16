@@ -40,4 +40,3 @@ export const updateDashboard = async (id, data) => {
 export const deleteDashboard = async (id) => {
   return await prisma.dashboard.delete({ where: { id } });
 };
-
