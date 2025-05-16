@@ -7,6 +7,7 @@ const formatDashboardResponse = (dashboard) => ({
   id: dashboard.id,
   name: dashboard.name,
   url: dashboard.url,
+  information: dashboard.information || null, // Adicionado o campo information
   areaId: dashboard.areaId,
   areaName: dashboard.area?.name || null,
   createdAt: dashboard.createdAt,
@@ -80,7 +81,7 @@ export const getDashboardById = async (req, res, next) => {
 
 // Controller para ADICIONAR um novo dashboard
 export const addDashboard = async (req, res, next) => {
-  const { name, url, areaId } = req.body;
+  const { name, url, areaId, information } = req.body; // Adicionado o campo information
 
   try {
     // A verificação de areaExists pode ser movida para o service se desejado,
@@ -90,7 +91,7 @@ export const addDashboard = async (req, res, next) => {
       return res.status(400).json({ message: "Área especificada não existe." });
     }
 
-    const newDashboard = await DashboardService.createDashboard({ name, url, areaId });
+    const newDashboard = await DashboardService.createDashboard({ name, url, areaId, information }); // Adicionado o campo information
     res.status(201).json(formatDashboardResponse(newDashboard));
   } catch (error) {
     console.error("Erro no controller ao adicionar dashboard:", error);
@@ -101,7 +102,7 @@ export const addDashboard = async (req, res, next) => {
 // Controller para ATUALIZAR um dashboard existente
 export const updateDashboard = async (req, res, next) => {
   const dashboardId = parseInt(req.params.id);
-  const { name, url, areaId } = req.body;
+  const { name, url, areaId, information } = req.body; // Adicionado o campo information
 
   try {
     const areaExists = await prisma.area.findUnique({ where: { id: areaId } });
@@ -114,7 +115,7 @@ export const updateDashboard = async (req, res, next) => {
         return res.status(404).json({ message: "Dashboard não encontrado para atualização." });
     }
 
-    const updatedDashboard = await DashboardService.updateDashboard(dashboardId, { name, url, areaId });
+    const updatedDashboard = await DashboardService.updateDashboard(dashboardId, { name, url, areaId, information }); // Adicionado o campo information
     res.json(formatDashboardResponse(updatedDashboard));
   } catch (error) {
     console.error("Erro no controller ao atualizar dashboard:", error);
@@ -146,4 +147,3 @@ export const deleteDashboard = async (req, res, next) => {
     next(error);
   }
 };
-
