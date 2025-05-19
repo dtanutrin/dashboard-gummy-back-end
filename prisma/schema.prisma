@@ -20,13 +20,16 @@ model Area {
   @@map("Areas")
 }
 model User {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique
-  passwordHash  String         @map("password_hash")
-  role          String         @default("User") // "Admin" or "User"
-  areaAccesses  UserAreaAccess[]
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  id              Int            @id @default(autoincrement())
+  email           String         @unique
+  passwordHash    String         @map("password_hash")
+  name            String?
+  role            String         @default("User") // "Admin" or "User"
+  resetToken      String?        @map("reset_token")
+  resetTokenExpiry DateTime?     @map("reset_token_expiry")
+  areaAccesses    UserAreaAccess[]
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
   @@map("Users")
 }
 model Dashboard {

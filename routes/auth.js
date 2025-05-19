@@ -52,6 +52,9 @@ router.get('/me', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Importar o serviço de email
+import { sendPasswordResetEmail } from '../services/emailService.js';
+
 // Rota para solicitar redefinição de senha
 router.post('/forgot-password', async (req, res, next) => {
   try {
@@ -82,8 +85,14 @@ router.post('/forgot-password', async (req, res, next) => {
       },
     });
     
-    // Aqui você implementaria o envio de email com o link contendo o token
-    // Por exemplo: sendEmail(user.email, `https://seu-site.com/reset-password?token=${resetToken}`);
+    // Enviar email com o token de recuperação
+    try {
+      await sendPasswordResetEmail(email, resetToken);
+      console.log(`Email de recuperação enviado para ${email}`);
+    } catch (emailError) {
+      console.error('Erro ao enviar email de recuperação:', emailError);
+      // Não retornamos erro para o cliente por questões de segurança
+    }
     
     // Resposta de sucesso (mesmo que o email não exista, por segurança)
     res.status(200).json({ 
@@ -91,6 +100,7 @@ router.post('/forgot-password', async (req, res, next) => {
     });
     
   } catch (error) {
+    console.error('Erro na rota forgot-password:', error);
     next(error);
   }
 });
