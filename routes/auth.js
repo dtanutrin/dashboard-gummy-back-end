@@ -1,74 +1,141 @@
-import { Router } from "express";
-import { body } from "express-validator";
-import handleValidationErrors from "../utils/handleValidationErrors.js";
-import { loginUser } from "../controllers/authController.js";
-import authenticateToken from "../middleware/authenticateToken.js";
-import prisma from "../config/prisma.js"; // Importar Prisma Client
+import express from 'express';
+import { loginUser } from '../controllers/authController.js';
+import authenticateToken from '../middleware/authenticateToken.js';
+import prisma from '../config/prisma.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import crypto from 'crypto';
 
-const router = Router();
+dotenv.config();
 
-// Rota de Login
-router.post(
-  "/login",
-  [
-    body("email", "Formato de email inválido").isEmail().normalizeEmail(),
-    body("password", "A senha não pode estar em branco").notEmpty(),
-  ],
-  handleValidationErrors,
-  loginUser
-);
+const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Rota para validar o token e obter dados do usuário logado
-router.get("/me", authenticateToken, async (req, res, next) => {
+// Rota de login
+router.post('/login', loginUser);
+
+// Rota para validar token
+router.get('/validate', authenticateToken, (req, res) => {
+  res.status(200).json({ valid: true });
+});
+
+// Rota para obter dados do usuário atual
+router.get('/me', authenticateToken, async (req, res, next) => {
   try {
-    // req.user contém o payload do token (userId, email, role)
-    const userId = req.user.userId;
-
-    const userWithAreas = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        name: true, // Incluir o nome do usuário se existir
-        areaAccesses: { // Corrigido para areaAccesses
-          select: {
-            area: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      include: {
+        areaAccesses: {
+          include: {
+            area: true,
           },
         },
       },
     });
 
-    if (!userWithAreas) {
-      return res.status(404).json({ message: "Usuário não encontrado." });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
     }
 
-    // Formatar as áreas para o frontend
-    const areas = userWithAreas.areaAccesses.map(access => access.area);
+    const areas = user.areaAccesses.map(access => access.area);
 
-    res.status(200).json({
-      id: userWithAreas.id,
-      email: userWithAreas.email,
-      role: userWithAreas.role,
-      name: userWithAreas.name,
-      areas: areas, // Inclui as áreas formatadas
+    res.json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      areas: areas,
     });
-
   } catch (error) {
-    console.error("Erro na rota /me:", error);
     next(error);
   }
 });
 
-// Rota para uma validação simples de token (opcional, /me é geralmente mais útil)
-router.get("/validate", authenticateToken, (req, res) => {
-  res.status(200).json({ message: "Token is valid.", user: req.user });
+// Rota para solicitar redefinição de senha
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    // Verificar se o usuário existe
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+    
+    if (!user) {
+      // Por segurança, não informamos se o email existe ou não
+      return res.status(200).json({ 
+        message: 'Se o email estiver cadastrado, você receberá instruções para redefinir sua senha.' 
+      });
+    }
+    
+    // Gerar token de redefinição
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hora
+    
+    // Salvar token no banco de dados
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken,
+        resetTokenExpiry,
+      },
+    });
+    
+    // Aqui você implementaria o envio de email com o link contendo o token
+    // Por exemplo: sendEmail(user.email, `https://seu-site.com/reset-password?token=${resetToken}`);
+    
+    // Resposta de sucesso (mesmo que o email não exista, por segurança)
+    res.status(200).json({ 
+      message: 'Se o email estiver cadastrado, você receberá instruções para redefinir sua senha.' 
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Rota para redefinir senha com token
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token e nova senha são obrigatórios.' });
+    }
+    
+    // Buscar usuário com o token válido
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: {
+          gt: new Date(),
+        },
+      },
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Token inválido ou expirado.' });
+    }
+    
+    // Hash da nova senha
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    // Atualizar senha e limpar token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+    
+    res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+    
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;
-

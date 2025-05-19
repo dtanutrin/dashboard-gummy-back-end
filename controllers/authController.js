@@ -40,7 +40,7 @@ export const loginUser = async (req, res, next) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "12h" }
     );
 
     res.json({
