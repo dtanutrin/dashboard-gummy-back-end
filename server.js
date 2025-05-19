@@ -19,7 +19,7 @@ app.set("trust proxy", 1);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 200, n
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Muitas requisições enviadas deste IP, por favor tente novamente após 15 minutos.',
