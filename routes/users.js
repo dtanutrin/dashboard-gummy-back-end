@@ -49,6 +49,93 @@ router.get('/', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+
+// Rota para obter perfil do usuário atual
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        created_at: true,
+        updated_at: true,
+        UserAreaAccess: {
+          select: {
+            area: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Erro ao buscar perfil:', error);
+    res.status(500).json({ message: 'Erro ao buscar perfil' });
+  }
+});
+
+// Rota para atualizar perfil do usuário atual
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, currentPassword, newPassword } = req.body;
+    
+    // Preparar dados para atualização
+    const updateData = {};
+    
+    // Se o nome foi fornecido, atualizar
+    if (name) {
+      updateData.name = name;
+    }
+    
+    // Se senha atual e nova foram fornecidas, verificar e atualizar
+    if (currentPassword && newPassword) {
+      const user = await prisma.users.findUnique({
+        where: { id: req.user.id },
+        select: { password_hash: true }
+      });
+      
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: 'Senha atual incorreta' });
+      }
+      
+      // Gerar hash da nova senha
+      updateData.password_hash = await bcrypt.hash(newPassword, 10);
+    }
+    
+    // Atualizar usuário
+    const updatedUser = await prisma.users.update({
+      where: { id: req.user.id },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        created_at: true,
+        updated_at: true
+      }
+    });
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
+    res.status(500).json({ message: 'Erro ao atualizar perfil' });
+  }
+});
+
 // Rota para obter um usuário específico por ID (apenas admin)
 router.get('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
