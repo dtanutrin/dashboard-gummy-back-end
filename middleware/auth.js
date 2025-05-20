@@ -1,4 +1,4 @@
-// Solução para o problema de permissão de administrador
+
 // Caminho: /opt/render/project/src/middleware/auth.js
 
 import jwt from 'jsonwebtoken';
@@ -42,8 +42,9 @@ const isAdmin = (req, res, next) => {
     return res.status(401).json({ message: 'Usuário não autenticado.' });
   }
   
-  // Correção: Tornar a verificação insensível a maiúsculas/minúsculas
-  if (req.user.role.toUpperCase() !== 'ADMIN') {
+  // Verificação mais robusta: garantir que req.user.role existe e fazer comparação case-insensitive
+  if (!req.user.role || (req.user.role.toUpperCase() !== 'ADMIN')) {
+    console.log('Acesso negado. Role do usuário:', req.user.role);
     return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem realizar esta ação.' });
   }
   
