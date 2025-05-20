@@ -1,4 +1,4 @@
-
+// Solução corrigida para o problema de permissão de administrador
 // Caminho: /opt/render/project/src/middleware/auth.js
 
 import jwt from 'jsonwebtoken';

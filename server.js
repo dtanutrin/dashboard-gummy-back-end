@@ -1,4 +1,5 @@
-// Caminho: dashboard-gummy-back-end/server.js
+// Caminho: /opt/render/project/src/server.js
+// Arquivo modificado para resolver problema de CORS
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -8,23 +9,23 @@ import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboards.js';
 import userRoutes from './routes/users.js';
 import areaRoutes from './routes/areaRoutes.js';
+import { corsMiddleware, handleOptions } from './middleware/cors.js';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Configuração CORS para permitir requisições do frontend
-app.use(cors({
-  origin: [
-    'https://dta-gummy.netlify.app',
-    'https://dashboardgummy.netlify.app', // mantendo o domínio antigo por compatibilidade
-    'http://localhost:3000' // para desenvolvimento local
-  ],
-  credentials: true
-} ));
+// Aplicar middleware de CORS personalizado ANTES de qualquer outro middleware
+app.use(handleOptions);
+app.use(corsMiddleware);
 
-app.use(helmet());
+// Outros middlewares de segurança
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }
+}));
+
 app.set("trust proxy", 1);
 
 const limiter = rateLimit({
@@ -38,6 +39,7 @@ app.use(limiter);
 
 app.use(express.json());
 
+// Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/users', userRoutes);
@@ -47,6 +49,7 @@ app.get('/', (req, res) => {
   res.send('Backend Gummy Dashboards está rodando!');
 });
 
+// Middleware de tratamento de erros
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ message: err.message || 'Algo deu errado no servidor!' });
