@@ -1,5 +1,5 @@
-
-// Este arquivo reexporta os middlewares de autenticação e verificação de admin
+// Solução para o problema de permissão de administrador
+// Caminho: /opt/render/project/src/middleware/auth.js
 
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -42,7 +42,8 @@ const isAdmin = (req, res, next) => {
     return res.status(401).json({ message: 'Usuário não autenticado.' });
   }
   
-  if (req.user.role !== 'ADMIN') {
+  // Correção: Tornar a verificação insensível a maiúsculas/minúsculas
+  if (req.user.role.toUpperCase() !== 'ADMIN') {
     return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem realizar esta ação.' });
   }
   
