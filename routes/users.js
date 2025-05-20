@@ -11,15 +11,15 @@ const prisma = new PrismaClient();
 // Rota para obter todos os usuários (apenas admin)
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const users = await prisma.users.findMany({
+    const users = await prisma.User.findMany({
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        created_at: true,
-        updated_at: true,
-        UserAreaAccess: {
+        createdAt: true,
+        updatedAt: true,
+        areaAccesses: {
           select: {
             area: {
               select: {
@@ -34,8 +34,8 @@ router.get('/', authenticateToken, isAdmin, async (req, res) => {
 
     // Formatar a resposta para incluir áreas como array
     const formattedUsers = users.map(user => {
-      const areas = user.UserAreaAccess.map(access => access.area);
-      const { UserAreaAccess, ...userData } = user;
+      const areas = user.areaAccesses.map(access => access.area);
+      const { areaAccesses, ...userData } = user;
       return {
         ...userData,
         areas
@@ -53,16 +53,16 @@ router.get('/', authenticateToken, isAdmin, async (req, res) => {
 // Rota para obter perfil do usuário atual
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: req.user.id },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        created_at: true,
-        updated_at: true,
-        UserAreaAccess: {
+        createdAt: true,
+        updatedAt: true,
+        areaAccesses: {
           select: {
             area: {
               select: {
@@ -101,22 +101,22 @@ router.put('/profile', authenticateToken, async (req, res) => {
     
     // Se senha atual e nova foram fornecidas, verificar e atualizar
     if (currentPassword && newPassword) {
-      const user = await prisma.users.findUnique({
+      const user = await prisma.User.findUnique({
         where: { id: req.user.id },
-        select: { password_hash: true }
+        select: { passwordHash: true }
       });
       
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
       if (!isPasswordValid) {
         return res.status(400).json({ message: 'Senha atual incorreta' });
       }
       
       // Gerar hash da nova senha
-      updateData.password_hash = await bcrypt.hash(newPassword, 10);
+      updateData.passwordHash = await bcrypt.hash(newPassword, 10);
     }
     
     // Atualizar usuário
-    const updatedUser = await prisma.users.update({
+    const updatedUser = await prisma.User.update({
       where: { id: req.user.id },
       data: updateData,
       select: {
@@ -124,8 +124,8 @@ router.put('/profile', authenticateToken, async (req, res) => {
         email: true,
         name: true,
         role: true,
-        created_at: true,
-        updated_at: true
+        createdAt: true,
+        updatedAt: true
       }
     });
     
@@ -140,16 +140,16 @@ router.put('/profile', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: Number(id) },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        created_at: true,
-        updated_at: true,
-        UserAreaAccess: {
+        createdAt: true,
+        updatedAt: true,
+        areaAccesses: {
           select: {
             area: {
               select: {
@@ -167,8 +167,8 @@ router.get('/:id', authenticateToken, isAdmin, async (req, res) => {
     }
 
     // Formatar a resposta para incluir áreas como array
-    const areas = user.UserAreaAccess.map(access => access.area);
-    const { UserAreaAccess, ...userData } = user;
+    const areas = user.areaAccesses.map(access => access.area);
+    const { areaAccesses, ...userData } = user;
     const formattedUser = {
       ...userData,
       areas
@@ -192,7 +192,7 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
     }
 
     // Verificar se o email já está em uso
-    const existingUser = await prisma.users.findUnique({
+    const existingUser = await prisma.User.findUnique({
       where: { email }
     });
 
@@ -206,10 +206,10 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
       : await bcrypt.hash('password123', 10);
 
     // Criar o usuário
-    const newUser = await prisma.users.create({
+    const newUser = await prisma.User.create({
       data: {
         email,
-        password_hash: hashedPassword,
+        passwordHash: hashedPassword,
         role,
         name
       }
@@ -218,11 +218,11 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
     // Se areaIds foram fornecidos, criar os acessos às áreas
     if (areaIds && areaIds.length > 0) {
       const areaAccesses = areaIds.map(areaId => ({
-        user_id: newUser.id,
-        area_id: areaId
+        userId: newUser.id,
+        areaId: areaId
       }));
 
-      await prisma.userAreaAccess.createMany({
+      await prisma.UserAreaAccess.createMany({
         data: areaAccesses
       });
     }
@@ -232,8 +232,8 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
       email: newUser.email,
       role: newUser.role,
       name: newUser.name,
-      created_at: newUser.created_at,
-      updated_at: newUser.updated_at
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt
     });
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
@@ -248,7 +248,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     const { email, role, name, areaIds } = req.body;
 
     // Verificar se o usuário existe
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: Number(id) }
     });
 
@@ -258,7 +258,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
 
     // Verificar se o novo email já está em uso por outro usuário
     if (email && email !== user.email) {
-      const existingUser = await prisma.users.findUnique({
+      const existingUser = await prisma.User.findUnique({
         where: { email }
       });
 
@@ -268,7 +268,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     }
 
     // Atualizar o usuário
-    const updatedUser = await prisma.users.update({
+    const updatedUser = await prisma.User.update({
       where: { id: Number(id) },
       data: {
         email: email || user.email,
@@ -280,18 +280,18 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     // Se areaIds foram fornecidos, atualizar os acessos às áreas
     if (areaIds) {
       // Remover todos os acessos existentes
-      await prisma.userAreaAccess.deleteMany({
-        where: { user_id: Number(id) }
+      await prisma.UserAreaAccess.deleteMany({
+        where: { userId: Number(id) }
       });
 
       // Adicionar os novos acessos
       if (areaIds.length > 0) {
         const areaAccesses = areaIds.map(areaId => ({
-          user_id: Number(id),
-          area_id: areaId
+          userId: Number(id),
+          areaId: areaId
         }));
 
-        await prisma.userAreaAccess.createMany({
+        await prisma.UserAreaAccess.createMany({
           data: areaAccesses
         });
       }
@@ -302,8 +302,8 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
       email: updatedUser.email,
       role: updatedUser.role,
       name: updatedUser.name,
-      created_at: updatedUser.created_at,
-      updated_at: updatedUser.updated_at
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt
     });
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
@@ -317,7 +317,7 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     const { id } = req.params;
 
     // Verificar se o usuário existe
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: Number(id) }
     });
 
@@ -326,12 +326,12 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     }
 
     // Remover todos os acessos às áreas
-    await prisma.userAreaAccess.deleteMany({
-      where: { user_id: Number(id) }
+    await prisma.UserAreaAccess.deleteMany({
+      where: { userId: Number(id) }
     });
 
     // Excluir o usuário
-    await prisma.users.delete({
+    await prisma.User.delete({
       where: { id: Number(id) }
     });
 
@@ -353,7 +353,7 @@ router.put('/:id/password', authenticateToken, isAdmin, async (req, res) => {
     }
 
     // Verificar se o usuário existe
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: Number(id) }
     });
 
@@ -365,9 +365,9 @@ router.put('/:id/password', authenticateToken, isAdmin, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Atualizar a senha do usuário
-    await prisma.users.update({
+    await prisma.User.update({
       where: { id: Number(id) },
-      data: { password_hash: hashedPassword }
+      data: { passwordHash: hashedPassword }
     });
 
     res.json({ message: 'Senha atualizada com sucesso' });
@@ -382,16 +382,16 @@ router.get('/profile/me', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: Number(userId) },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        created_at: true,
-        updated_at: true,
-        UserAreaAccess: {
+        createdAt: true,
+        updatedAt: true,
+        areaAccesses: {
           select: {
             area: {
               select: {
@@ -409,8 +409,8 @@ router.get('/profile/me', authenticateToken, async (req, res) => {
     }
 
     // Formatar a resposta para incluir áreas como array
-    const areas = user.UserAreaAccess.map(access => access.area);
-    const { UserAreaAccess, ...userData } = user;
+    const areas = user.areaAccesses.map(access => access.area);
+    const { areaAccesses, ...userData } = user;
     const formattedUser = {
       ...userData,
       areas
@@ -430,7 +430,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     const { name, currentPassword, newPassword } = req.body;
 
     // Verificar se o usuário existe
-    const user = await prisma.users.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: Number(userId) }
     });
 
@@ -449,14 +449,14 @@ router.put('/profile', authenticateToken, async (req, res) => {
     // Atualizar senha se fornecida
     if (currentPassword && newPassword) {
       // Verificar senha atual
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
       
       if (!isPasswordValid) {
         return res.status(401).json({ message: 'Senha atual incorreta' });
       }
       
       // Gerar hash da nova senha
-      updateData.password_hash = await bcrypt.hash(newPassword, 10);
+      updateData.passwordHash = await bcrypt.hash(newPassword, 10);
     }
 
     // Se não há dados para atualizar
@@ -465,7 +465,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     }
 
     // Atualizar o usuário
-    const updatedUser = await prisma.users.update({
+    const updatedUser = await prisma.User.update({
       where: { id: Number(userId) },
       data: updateData
     });
