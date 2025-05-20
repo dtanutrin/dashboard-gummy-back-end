@@ -1,3 +1,4 @@
+// Caminho: dashboard-gummy-back-end/server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,16 +7,12 @@ import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboards.js';
 import userRoutes from './routes/users.js';
-import areaRoutes from './routes/areaRoutes.js'; // Corrigido para o nome do arquivo correto
+import areaRoutes from './routes/areaRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
-const cors = require('cors');
-
-
-
 
 // Configuração CORS para permitir requisições do frontend
 app.use(cors({
@@ -26,8 +23,8 @@ app.use(cors({
   ],
   credentials: true
 } ));
+
 app.use(helmet());
-app.use(cors());
 app.set("trust proxy", 1);
 
 const limiter = rateLimit({
@@ -44,7 +41,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/areas', areaRoutes); // Rota de áreas registrada
+app.use('/api/areas', areaRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend Gummy Dashboards está rodando!');
@@ -58,4 +55,3 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
   console.log(`Servidor backend rodando na porta ${port}`);
 });
-
