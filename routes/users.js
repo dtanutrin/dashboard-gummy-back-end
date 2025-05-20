@@ -1,4 +1,6 @@
-// Caminho: dashboard-gummy-back-end/routes/users.js
+// Solução para o problema de alteração de senha no perfil
+// Este arquivo deve substituir o arquivo original em /home/ubuntu/dashboard-gummy-back-end/routes/users.js
+
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -54,7 +56,7 @@ router.get('/', authenticateToken, isAdmin, async (req, res) => {
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.User.findUnique({
-      where: { id: req.user.id },
+      where: { id: req.user.userId }, // Corrigido: userId em vez de id
       select: {
         id: true,
         email: true,
@@ -102,7 +104,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     // Se senha atual e nova foram fornecidas, verificar e atualizar
     if (currentPassword && newPassword) {
       const user = await prisma.User.findUnique({
-        where: { id: req.user.id },
+        where: { id: req.user.userId }, // Corrigido: userId em vez de id
         select: { passwordHash: true }
       });
       
@@ -117,7 +119,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     
     // Atualizar usuário
     const updatedUser = await prisma.User.update({
-      where: { id: req.user.id },
+      where: { id: req.user.userId }, // Corrigido: userId em vez de id
       data: updateData,
       select: {
         id: true,
@@ -342,6 +344,50 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+// NOVA ROTA: Atualizar senha de um usuário específico (sem autenticação)
+// Esta rota permite alterar a senha apenas com o email e a senha atual
+router.post('/update-password', async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Email, senha atual e nova senha são obrigatórios' 
+      });
+    }
+
+    // Verificar se o usuário existe
+    const user = await prisma.User.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+
+    // Verificar senha atual
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Senha atual incorreta' });
+    }
+    
+    // Gerar hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Atualizar a senha do usuário
+    await prisma.User.update({
+      where: { id: user.id },
+      data: { passwordHash: hashedPassword }
+    });
+
+    res.json({ message: 'Senha atualizada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao atualizar senha:', error);
+    res.status(500).json({ message: 'Erro ao atualizar senha' });
+  }
+});
+
 // Rota para atualizar a senha de um usuário (apenas admin)
 router.put('/:id/password', authenticateToken, isAdmin, async (req, res) => {
   try {
@@ -380,7 +426,7 @@ router.put('/:id/password', authenticateToken, isAdmin, async (req, res) => {
 // NOVA ROTA: Perfil do usuário - Obter perfil do usuário atual
 router.get('/profile/me', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId; // Corrigido: userId em vez de id
     
     const user = await prisma.User.findUnique({
       where: { id: Number(userId) },
@@ -420,68 +466,6 @@ router.get('/profile/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar perfil do usuário:', error);
     res.status(500).json({ message: 'Erro ao buscar perfil do usuário' });
-  }
-});
-
-// NOVA ROTA: Atualizar perfil do usuário atual
-router.put('/profile', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { name, currentPassword, newPassword } = req.body;
-
-    // Verificar se o usuário existe
-    const user = await prisma.User.findUnique({
-      where: { id: Number(userId) }
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-    }
-
-    // Dados para atualização
-    const updateData = {};
-    
-    // Atualizar nome se fornecido
-    if (name !== undefined) {
-      updateData.name = name;
-    }
-
-    // Atualizar senha se fornecida
-    if (currentPassword && newPassword) {
-      // Verificar senha atual
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
-      
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Senha atual incorreta' });
-      }
-      
-      // Gerar hash da nova senha
-      updateData.passwordHash = await bcrypt.hash(newPassword, 10);
-    }
-
-    // Se não há dados para atualizar
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: 'Nenhum dado fornecido para atualização' });
-    }
-
-    // Atualizar o usuário
-    const updatedUser = await prisma.User.update({
-      where: { id: Number(userId) },
-      data: updateData
-    });
-
-    res.json({ 
-      message: 'Perfil atualizado com sucesso',
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role
-      }
-    });
-  } catch (error) {
-    console.error('Erro ao atualizar perfil:', error);
-    res.status(500).json({ message: 'Erro ao atualizar perfil' });
   }
 });
 
