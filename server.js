@@ -12,7 +12,20 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+const cors = require('cors');
 
+
+
+
+// Configuração CORS para permitir requisições do frontend
+app.use(cors({
+  origin: [
+    'https://dta-gummy.netlify.app',
+    'https://dashboardgummy.netlify.app', // mantendo o domínio antigo por compatibilidade
+    'http://localhost:3000' // para desenvolvimento local
+  ],
+  credentials: true
+} ));
 app.use(helmet());
 app.use(cors());
 app.set("trust proxy", 1);
