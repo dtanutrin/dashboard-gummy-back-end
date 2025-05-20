@@ -1,5 +1,3 @@
-// Solução para o problema de recuperação de senha
-// Este arquivo deve substituir o arquivo original em /home/ubuntu/dashboard-gummy-back-end/routes/auth.js
 
 import express from 'express';
 import { loginUser } from '../controllers/authController.js';
@@ -27,7 +25,7 @@ router.get('/validate', authenticateToken, (req, res) => {
 router.get('/me', authenticateToken, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.userId }, // Corrigido: userId em vez de id
+      where: { id: req.user.userId },
       include: {
         areaAccesses: {
           include: {
@@ -56,7 +54,7 @@ router.get('/me', authenticateToken, async (req, res, next) => {
 });
 
 // Importar o serviço de email
-import { sendPasswordResetEmail, sendPasswordResetEmailNoAuth } from '../services/emailService.js';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 
 // Rota para solicitar redefinição de senha
 router.post('/forgot-password', async (req, res, next) => {
@@ -90,30 +88,31 @@ router.post('/forgot-password', async (req, res, next) => {
     
     // Enviar email com o token de recuperação
     try {
-      // Primeiro tenta enviar com o método normal
-      await sendPasswordResetEmail(email, resetToken);
+      // Tenta enviar o email usando o serviço configurado
+      const emailResult = await sendPasswordResetEmail(email, resetToken);
       console.log(`Email de recuperação enviado para ${email}`);
+      
+      // Se estamos em ambiente de desenvolvimento ou teste, retornamos informações adicionais
+      if (process.env.NODE_ENV !== 'production' || emailResult.isTestEmail) {
+        return res.status(200).json({
+          message: 'Instruções de recuperação de senha enviadas.',
+          // Incluindo o token e URL de visualização para facilitar testes
+          token: resetToken,
+          previewUrl: emailResult.previewUrl
+        });
+      }
     } catch (emailError) {
       console.error('Erro ao enviar email de recuperação:', emailError);
       
-      try {
-        // Se falhar, tenta com o método alternativo (sem autenticação)
-        const testResult = await sendPasswordResetEmailNoAuth(email, resetToken);
-        console.log(`Email de teste enviado para ${email}. URL de visualização:`, testResult.previewUrl);
-        
-        // Retorna a URL de visualização para facilitar o teste
-        return res.status(200).json({
-          message: 'Email de recuperação enviado (modo teste). Por favor, verifique o console do servidor para a URL de visualização.',
-          previewUrl: testResult.previewUrl,
-          token: resetToken // Incluindo o token para facilitar testes
-        });
-      } catch (testEmailError) {
-        console.error('Erro ao enviar email de teste:', testEmailError);
-        // Não retornamos erro para o cliente por questões de segurança
-      }
+      // Em caso de erro no envio, retornamos o token diretamente
+      // Esta é uma solução de contingência para quando o email falha
+      return res.status(200).json({
+        message: 'Não foi possível enviar o email, mas você pode usar o token abaixo para redefinir sua senha.',
+        token: resetToken
+      });
     }
     
-    // Resposta de sucesso (mesmo que o email não exista, por segurança)
+    // Resposta padrão de sucesso
     res.status(200).json({ 
       message: 'Se o email estiver cadastrado, você receberá instruções para redefinir sua senha.',
       // Em ambiente de desenvolvimento, podemos retornar o token para facilitar testes
@@ -169,41 +168,38 @@ router.post('/reset-password', async (req, res, next) => {
   }
 });
 
-// Nova rota para redefinir senha diretamente (sem token)
-// Esta rota é uma alternativa simplificada para quando o envio de email não funciona
-router.post('/reset-password-direct', async (req, res, next) => {
+// Nova rota para verificar a validade de um token de redefinição
+router.get('/verify-reset-token/:token', async (req, res, next) => {
   try {
-    const { email, newPassword } = req.body;
+    const { token } = req.params;
     
-    if (!email || !newPassword) {
-      return res.status(400).json({ message: 'Email e nova senha são obrigatórios.' });
+    if (!token) {
+      return res.status(400).json({ valid: false, message: 'Token não fornecido.' });
     }
     
-    // Buscar usuário pelo email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-    
-    if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado.' });
-    }
-    
-    // Hash da nova senha
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    
-    // Atualizar senha
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        resetToken: null,
-        resetTokenExpiry: null,
+    // Buscar usuário com o token válido
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: {
+          gt: new Date(),
+        },
       },
     });
     
-    res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+    if (!user) {
+      return res.status(200).json({ valid: false, message: 'Token inválido ou expirado.' });
+    }
+    
+    // Token é válido
+    res.status(200).json({ 
+      valid: true, 
+      message: 'Token válido.',
+      email: user.email // Retornar o email associado ao token
+    });
     
   } catch (error) {
+    console.error('Erro ao verificar token:', error);
     next(error);
   }
 });
