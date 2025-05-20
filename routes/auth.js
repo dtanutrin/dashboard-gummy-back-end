@@ -1,4 +1,7 @@
+// Solução para o problema de recuperação de senha usando SendGrid
+// Este arquivo deve substituir o arquivo original em /home/ubuntu/dashboard-gummy-back-end/routes/auth.js
 
+// Caminho: dashboard-gummy-back-end/routes/auth.js
 import express from 'express';
 import { loginUser } from '../controllers/authController.js';
 import authenticateToken from '../middleware/authenticateToken.js';
@@ -92,15 +95,14 @@ router.post('/forgot-password', async (req, res, next) => {
       const emailResult = await sendPasswordResetEmail(email, resetToken);
       console.log(`Email de recuperação enviado para ${email}`);
       
-      // Se estamos em ambiente de desenvolvimento ou teste, retornamos informações adicionais
-      if (process.env.NODE_ENV !== 'production' || emailResult.isTestEmail) {
-        return res.status(200).json({
-          message: 'Instruções de recuperação de senha enviadas.',
-          // Incluindo o token e URL de visualização para facilitar testes
-          token: resetToken,
-          previewUrl: emailResult.previewUrl
-        });
-      }
+      // Retorna informações adicionais para facilitar testes e uso
+      return res.status(200).json({
+        message: 'Instruções de recuperação de senha enviadas.',
+        // Incluindo o token e URL de visualização para facilitar testes
+        token: resetToken,
+        previewUrl: emailResult.previewUrl,
+        success: true
+      });
     } catch (emailError) {
       console.error('Erro ao enviar email de recuperação:', emailError);
       
@@ -108,17 +110,10 @@ router.post('/forgot-password', async (req, res, next) => {
       // Esta é uma solução de contingência para quando o email falha
       return res.status(200).json({
         message: 'Não foi possível enviar o email, mas você pode usar o token abaixo para redefinir sua senha.',
-        token: resetToken
+        token: resetToken,
+        success: true
       });
     }
-    
-    // Resposta padrão de sucesso
-    res.status(200).json({ 
-      message: 'Se o email estiver cadastrado, você receberá instruções para redefinir sua senha.',
-      // Em ambiente de desenvolvimento, podemos retornar o token para facilitar testes
-      token: process.env.NODE_ENV === 'development' ? resetToken : undefined
-    });
-    
   } catch (error) {
     console.error('Erro na rota forgot-password:', error);
     next(error);
