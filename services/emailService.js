@@ -1,3 +1,4 @@
+// Caminho: dashboard-gummy-back-end/services/emailService.js
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
@@ -5,10 +6,10 @@ dotenv.config();
 
 // Configuração do serviço de email
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: process.env.EMAIL_SERVICE || 'gmail', // Pode ser 'gmail' ou 'outlook'
   auth: {
-    user: process.env.EMAIL_USER || 'seu-email@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'sua-senha-de-app',
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -24,7 +25,7 @@ export const sendPasswordResetEmail = async (to, token) => {
   
   // Configuração do email
   const mailOptions = {
-    from: process.env.EMAIL_USER || 'seu-email@gmail.com',
+    from: process.env.EMAIL_USER,
     to,
     subject: 'Redefinição de Senha - Gummy Dashboards',
     html: `
