@@ -3,7 +3,7 @@
 
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // ← MUDANÇA: bcrypt para bcryptjs
 import jwt from 'jsonwebtoken';
 import { authenticateToken, isAdmin } from '../middleware/auth.js';
 import { auditCRUD, captureAuditData } from '../middleware/auditMiddleware.js';

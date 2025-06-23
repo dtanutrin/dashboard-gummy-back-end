@@ -1,5 +1,3 @@
-// Solução para o problema de recuperação de senha usando SendGrid
-// Este arquivo deve substituir o arquivo original em /home/ubuntu/dashboard-gummy-back-end/routes/auth.js
 
 // Caminho: dashboard-gummy-back-end/routes/auth.js
 import express from 'express';
@@ -7,7 +5,7 @@ import { loginUser } from '../controllers/authController.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import { auditLogin } from '../middleware/auditMiddleware.js'; // ADICIONAR
 import prisma from '../config/prisma.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // ← MUDANÇA: bcrypt para bcryptjs
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';

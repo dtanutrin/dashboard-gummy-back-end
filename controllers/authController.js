@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs"; // ← MUDANÇA: bcrypt para bcryptjs
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import prisma from "../config/prisma.js"; // ADICIONAR esta linha
