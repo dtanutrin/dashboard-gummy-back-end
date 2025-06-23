@@ -88,7 +88,12 @@ export const sendPasswordResetEmail = async (to, token) => {
     }
     
     // Se não tiver SendGrid configurado, tenta usar o Ethereal
-    console.log('SendGrid não configurado. Tentando enviar via Ethereal para:', to);
+    // REMOVER estas linhas se não quiser logs de email:
+    // console.log('Tentando enviar email via SendGrid para:', to);
+    // console.log('Email enviado via SendGrid para:', to);
+    // console.log('SendGrid não configurado. Tentando enviar via Ethereal para:', to);
+    // console.log('Email enviado (teste):', info.messageId);
+    // console.log('URL de visualização:', previewUrl);
     const transporter = await createTestTransporter();
     
     const mailOptions = {

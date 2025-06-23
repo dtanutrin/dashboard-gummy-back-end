@@ -6,12 +6,13 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { authenticateToken, isAdmin } from '../middleware/auth.js';
+import { auditCRUD, captureAuditData } from '../middleware/auditMiddleware.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Rota para obter todos os usuários (apenas admin)
-router.get('/', authenticateToken, isAdmin, async (req, res) => {
+router.get('/', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), async (req, res) => {
   try {
     const users = await prisma.User.findMany({
       select: {
@@ -244,7 +245,7 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Rota para atualizar um usuário existente (apenas admin)
-router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
+router.put('/:id', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), async (req, res) => {
   try {
     const { id } = req.params;
     const { email, role, name, areaIds } = req.body;
@@ -314,7 +315,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Rota para excluir um usuário (apenas admin)
-router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/:id', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), async (req, res) => {
   try {
     const { id } = req.params;
 

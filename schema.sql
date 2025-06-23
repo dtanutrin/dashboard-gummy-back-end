@@ -40,6 +40,23 @@ CREATE TABLE IF NOT EXISTS "UserAreaAccess" (
   FOREIGN KEY ("area_id") REFERENCES "Areas"("id") ON DELETE CASCADE
 );
 
+-- Nova tabela para controle granular de acesso aos dashboards
+CREATE TABLE IF NOT EXISTS "UserDashboardAccess" (
+  "user_id" INTEGER NOT NULL,
+  "dashboard_id" INTEGER NOT NULL,
+  "granted_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "granted_by" INTEGER, -- ID do admin que concedeu a permissão (opcional)
+  PRIMARY KEY ("user_id", "dashboard_id"),
+  FOREIGN KEY ("user_id") REFERENCES "Users"("id") ON DELETE CASCADE,
+  FOREIGN KEY ("dashboard_id") REFERENCES "Dashboards"("id") ON DELETE CASCADE,
+  FOREIGN KEY ("granted_by") REFERENCES "Users"("id") ON DELETE SET NULL
+);
+
+-- Índices para otimizar consultas
+CREATE INDEX IF NOT EXISTS idx_userdashboardaccess_user_id ON "UserDashboardAccess"("user_id");
+CREATE INDEX IF NOT EXISTS idx_userdashboardaccess_dashboard_id ON "UserDashboardAccess"("dashboard_id");
+CREATE INDEX IF NOT EXISTS idx_userdashboardaccess_granted_by ON "UserDashboardAccess"("granted_by");
+
 -- Índices para otimizar consultas
 CREATE INDEX IF NOT EXISTS idx_dashboards_area_id ON "Dashboards"("area_id");
 CREATE INDEX IF NOT EXISTS idx_userareaaccess_user_id ON "UserAreaAccess"("user_id");

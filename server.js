@@ -9,7 +9,10 @@ import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboards.js';
 import userRoutes from './routes/users.js';
 import areaRoutes from './routes/areaRoutes.js';
+import dashboardPermissionsRoutes from './routes/dashboardPermissions.js';
+import logRoutes from './routes/logRoutes.js';
 import { corsMiddleware, handleOptions } from './middleware/cors.js';
+import { captureAuditData } from './middleware/auditMiddleware.js';
 
 dotenv.config();
 
@@ -39,11 +42,16 @@ app.use(limiter);
 
 app.use(express.json());
 
+// Middleware de auditoria (captura dados da requisição)
+app.use(captureAuditData);
+
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/areas', areaRoutes);
+app.use('/api/dashboard-permissions', dashboardPermissionsRoutes);
+app.use('/api/logs', logRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend Gummy Dashboards está rodando!');

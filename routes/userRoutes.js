@@ -1,26 +1,27 @@
-const express = require("express");
+import express from 'express';
+import { createUser, getAllUsers, getUserById, updateUser, deleteUser } from '../controllers/userController.js';
+import authenticateToken from '../middleware/authenticateToken.js';
+import isAdmin from '../middleware/isAdmin.js';
+import { auditCRUD, captureAuditData } from '../middleware/auditMiddleware.js';
+
 const router = express.Router();
-const userController = require("../controllers/userController");
-const { authenticateToken } = require("../middleware/authenticateToken");
-const { isAdmin } = require("../middleware/isAdmin");
 
 // Rotas de Usuário (protegidas e algumas restritas a Admin)
 
 // Criar um novo usuário (Admin)
-router.post("/", authenticateToken, isAdmin, userController.createUser);
+router.post('/', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), createUser);
 
 // Obter todos os usuários (Admin)
-router.get("/", authenticateToken, isAdmin, userController.getAllUsers);
+router.get('/', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), getAllUsers);
 
-// Obter um usuário por ID (Admin ou o próprio usuário para seus dados - lógica a ser implementada no controller se necessário)
-// Por enquanto, apenas Admin para simplificar
-router.get("/:id", authenticateToken, isAdmin, userController.getUserById);
+// Obter um usuário por ID (Admin ou o próprio usuário para seus dados)
+router.get('/:id', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), getUserById);
 
 // Atualizar um usuário (Admin)
-router.put("/:id", authenticateToken, isAdmin, userController.updateUser);
+router.put('/:id', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), updateUser);
 
 // Deletar um usuário (Admin)
-router.delete("/:id", authenticateToken, isAdmin, userController.deleteUser);
+router.delete('/:id', authenticateToken, isAdmin, captureAuditData, auditCRUD('users'), deleteUser);
 
-module.exports = router;
+export default router;
 

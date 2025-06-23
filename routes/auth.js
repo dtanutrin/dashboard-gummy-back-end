@@ -5,6 +5,7 @@
 import express from 'express';
 import { loginUser } from '../controllers/authController.js';
 import authenticateToken from '../middleware/authenticateToken.js';
+import { auditLogin } from '../middleware/auditMiddleware.js'; // ADICIONAR
 import prisma from '../config/prisma.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -16,8 +17,8 @@ dotenv.config();
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Rota de login
-router.post('/login', loginUser);
+// Rota de login COM auditoria
+router.post('/login', auditLogin, loginUser); // ADICIONAR auditLogin
 
 // Rota para validar token
 router.get('/validate', authenticateToken, (req, res) => {

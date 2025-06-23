@@ -1,7 +1,7 @@
-import prisma from "../config/prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import prisma from "../config/prisma.js"; // ADICIONAR esta linha
 
 dotenv.config();
 
@@ -38,6 +38,7 @@ export const loginUser = async (req, res, next) => {
         userId: user.id,
         email: user.email,
         role: user.role,
+        name: user.name // ← Adicionar o nome ao token
       },
       JWT_SECRET,
       { expiresIn: "12h" }

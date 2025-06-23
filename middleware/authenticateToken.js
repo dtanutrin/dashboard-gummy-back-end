@@ -12,24 +12,34 @@ if (!JWT_SECRET) {
 
 // Middleware para autenticar o token JWT
 const authenticateToken = (req, res, next) => {
+  // REMOVER todas estas linhas de debug:
+  // console.log('🔍 [DEBUG] authenticateToken middleware executado');
+  // console.log('🔍 [DEBUG] Headers recebidos:', req.headers);
+  
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (token == null) {
-    return res.status(401).json({ message: 'Token de autenticação não fornecido.' }); // Não autorizado
+  // console.log('🔍 [DEBUG] authHeader:', authHeader);
+  
+  const token = authHeader && authHeader.split(' ')[1];
+  // console.log('🔍 [DEBUG] token extraído:', token ? 'Token presente' : 'Token ausente');
+  
+  if (!token) {
+    // console.log('🚨 [DEBUG] Token não fornecido');
+    return res.status(401).json({ message: 'Token de acesso requerido' });
   }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(403).json({ message: 'Token expirado.' }); // Proibido
-      }
-      return res.status(403).json({ message: 'Token inválido.' }); // Proibido
+      // console.log('🚨 [DEBUG] Erro na verificação do token:', err.message);
+      return res.status(403).json({ 
+        message: 'Token inválido',
+        error: err.message 
+      });
     }
-
-    // Anexa as informações do usuário decodificadas à requisição
+    
+    // console.log('✅ [DEBUG] Token válido, usuário decodificado:', user);
+    // console.log('✅ [DEBUG] req.user será definido como:', user);
     req.user = user;
-    next(); // Passa para a próxima rota ou middleware
+    next();
   });
 };
 

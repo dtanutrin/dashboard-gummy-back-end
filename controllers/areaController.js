@@ -26,7 +26,7 @@ export const createArea = async (req, res) => {
 
 // Obter todas as Áreas com seus Dashboards (Filtrado por permissão)
 export const getAllAreas = async (req, res) => {
-  const user = req.user; // Injetado pelo authenticateToken
+  const user = req.user;
   try {
     let areas;
     if (user.role === "Admin") {
@@ -39,25 +39,54 @@ export const getAllAreas = async (req, res) => {
         },
       });
     } else {
+      // Buscar áreas com acesso
       const userAreaAccesses = await prisma.userAreaAccess.findMany({
         where: { userId: user.userId },
         select: { areaId: true },
       });
       const allowedAreaIds = userAreaAccesses.map(access => access.areaId);
+      
       if (allowedAreaIds.length === 0) {
-        return res.json([]); // Retorna array vazio se não tem acesso a nenhuma área
+        return res.json([]);
       }
+
+      // Buscar dashboards com permissão específica
+      const userDashboardAccesses = await prisma.userDashboardAccess.findMany({
+        where: { userId: user.userId },
+        include: {
+          dashboard: {
+            include: {
+              area: true
+            }
+          }
+        }
+      });
+
+      // Agrupar dashboards por área
+      const dashboardsByArea = {};
+      userDashboardAccesses.forEach(access => {
+        const areaId = access.dashboard.areaId;
+        if (!dashboardsByArea[areaId]) {
+          dashboardsByArea[areaId] = [];
+        }
+        dashboardsByArea[areaId].push(access.dashboard);
+      });
+
+      // Buscar áreas e incluir apenas dashboards com permissão
       areas = await prisma.area.findMany({
         where: {
           id: { in: allowedAreaIds },
         },
         orderBy: {
           name: "asc",
-        },
-        include: {
-          dashboards: true,
-        },
+        }
       });
+
+      // Adicionar dashboards filtrados a cada área
+      areas = areas.map(area => ({
+        ...area,
+        dashboards: dashboardsByArea[area.id] || []
+      }));
     }
     res.json(areas);
   } catch (error) {
@@ -69,7 +98,7 @@ export const getAllAreas = async (req, res) => {
 // Obter uma Área por ID com seus Dashboards (Filtrado por permissão)
 export const getAreaById = async (req, res) => {
   const { id } = req.params;
-  const user = req.user; // Injetado pelo authenticateToken
+  const user = req.user;
   try {
     const areaId = parseInt(id);
     if (user.role !== "Admin") {
@@ -86,16 +115,44 @@ export const getAreaById = async (req, res) => {
       }
     }
 
-    const area = await prisma.area.findUnique({
-      where: { id: areaId },
-      include: {
-        dashboards: true,
-      },
-    });
+    let area;
+    if (user.role === "Admin") {
+      // Admin vê todos os dashboards
+      area = await prisma.area.findUnique({
+        where: { id: areaId },
+        include: {
+          dashboards: true,
+        },
+      });
+    } else {
+      // Usuário regular: filtrar dashboards por permissão específica
+      const userDashboardAccesses = await prisma.userDashboardAccess.findMany({
+        where: { 
+          userId: user.userId,
+          dashboard: {
+            areaId: areaId
+          }
+        },
+        include: {
+          dashboard: true
+        }
+      });
 
+      area = await prisma.area.findUnique({
+        where: { id: areaId }
+      });
+
+      if (area) {
+        // Incluir apenas dashboards com permissão específica
+        area.dashboards = userDashboardAccesses.map(access => access.dashboard);
+      }
+    }
+
+    // CORREÇÃO: Adicionar verificação se área existe
     if (!area) {
       return res.status(404).json({ error: "Área não encontrada." });
     }
+    
     res.json(area);
   } catch (error) {
     console.error("Erro ao buscar área por ID com dashboards:", error);
